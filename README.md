@@ -4,18 +4,19 @@ Xit is a command-line tool that mimics some of the basic functionalities of Git.
 
 ## Features
 
-*   **Repository Initialization**: Create a new `.git`-like repository structure.
+*   **Repository Initialization**: Create a new `.xit`-like repository structure.
 *   **User Configuration**: Set up a global user name and email.
 *   **File Staging**: Add files to an index (staging area).
 *   **Committing**: Create commits with a message.
-*   **Colored Output**: User-friendly colored output for different commands.
-    *   **Viewing Repository Status**: Display changes staged for commit, unstaged changes, and untracked files.
+*   **Ignoring Files**: Use a `.xitignore` file to exclude files and directories from being tracked.
+*   **Viewing Repository Status**: Display changes staged for commit, unstaged changes, and untracked files.
+*   **Colored Output**: User-friendly colored output for status and messages.
 
 ## Commands
 
 Here are the commands currently supported by Xit:
 
-*   `xit init`: Initializes a new repository in the current directory. It creates a `.git` directory with the necessary subdirectories and files.
+*   `xit init`: Initializes a new repository in the current directory. It creates a `.xit` directory with the necessary subdirectories and files.
 
 *   `xit setup`: Interactively prompts you to set up your global user name and email. This information is stored in `~/.xit/config` and used for commits.
 
@@ -23,7 +24,15 @@ Here are the commands currently supported by Xit:
 
 *   `xit commit -m "<message>"`: Creates a new commit with the staged files. It creates a commit object and a tree object to represent the state of the repository.
 
-*   `xit status`: Shows the status of the working tree, index, and HEAD. It lists changes staged for commit, changes not staged for commit, and untracked files.
+*   `xit status`: Shows the status of the working tree with color-coded output. It lists changes staged for commit (green), changes not staged for commit (red), and untracked files (red).
+
+## Ignoring Files (.xitignore)
+
+You can create a `.xitignore` file in the root of your repository to tell `xit` to ignore certain files and directories. This works similarly to Git's `.gitignore`.
+
+Each line in the `.xitignore` file specifies a pattern. `xit` will not track any files or directories matching these patterns. The implementation currently ignores any path component that matches a line in the file (e.g., `target` will ignore any directory named `target` anywhere in the project).
+
+By default, `xit` ignores `.xit`, `.git`, and `target`.
 
 ## Installation
 
@@ -67,6 +76,16 @@ xit setup
 echo "hello world" > hello.txt
 xit add hello.txt
 
-# 5. Commit the changes
+# 5. Create a file to ignore
+mkdir logs
+echo "dev.log" > logs/dev.log
+
+# 6. Create a .xitignore file
+echo "logs" > .xitignore
+
+# 7. Check the status (logs/ will be ignored)
+xit status
+
+# 8. Commit the changes
 xit commit -m "Initial commit"
 ```
