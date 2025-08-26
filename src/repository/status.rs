@@ -5,7 +5,7 @@ use std::fs;
 use std::{
     collections::{HashMap, HashSet},
     io,
-    path::{Path, PathBuf},
+    path::Path,
 };
 use term_colr::{green, red};
 
