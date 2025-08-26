@@ -5,7 +5,7 @@ use std::fs;
 use std::{
     collections::{HashMap, HashSet},
     io,
-    path::Path,
+    path::{Path, PathBuf},
 };
 use term_colr::{green, red};
 
@@ -116,12 +116,18 @@ fn get_unstaged_and_untracked(
             working_dir_files.insert(relative_path.clone());
 
             if let Some(index_hash) = index_entries.get(&relative_path) {
-                let content = fs::read(path)?;
-                let wd_hash = blob::hash_to_hex(&blob::compute_sha1(&content));
+                // File is tracked, check for modifications.
+                let content_bytes = fs::read(path)?;
+                // Normalize line endings (CRLF -> LF) before hashing to prevent platform issues.
+                let content_str = String::from_utf8_lossy(&content_bytes);
+                let normalized_content = content_str.replace("\r\n", "\n");
+                let wd_hash = blob::hash_to_hex(&blob::compute_sha1(normalized_content.as_bytes()));
+
                 if &wd_hash != index_hash {
                     unstaged_changes.insert(relative_path, "modified".to_string());
                 }
             } else {
+                // File is not tracked.
                 untracked_files.insert(relative_path);
             }
         }
@@ -141,7 +147,7 @@ fn get_unstaged_and_untracked(
 fn print_status(result: &StatusResult) {
     if !result.staged.is_empty() {
         println!("Changes to be committed:");
-        println!("  (use \"xit restore --staged <file>...\" to unstage)\n");
+        println!("  (use \"xit restore --staged <file>...\" to unstage)\\n");
         print_changes(&result.staged, "green");
         println!();
     }
@@ -149,18 +155,18 @@ fn print_status(result: &StatusResult) {
     if !result.unstaged.is_empty() {
         println!("Changes not staged for commit:");
         println!("  (use \"xit add <file>...\" to update what will be committed)");
-        println!("  (use \"xit restore <file>...\" to discard changes in working directory)\n");
+        println!("  (use \"xit restore <file>...\" to discard changes in working directory)\\n");
         print_changes(&result.unstaged, "red");
         println!();
     }
 
     if !result.untracked.is_empty() {
         println!("Untracked files:");
-        println!("  (use \"xit add <file>...\" to include in what will be committed)\n");
+        println!("  (use \"xit add <file>...\" to include in what will be committed)\\n");
         let mut sorted_untracked: Vec<_> = result.untracked.iter().collect();
         sorted_untracked.sort();
         for path in sorted_untracked {
-            println!("    {} (\n)", red!("{}", path));
+            println!("    {}", red!("{}", path));
         }
         println!();
     }
@@ -177,7 +183,7 @@ fn print_changes(changes: &HashMap<String, String>, color: &str) {
     for (path, status) in sorted_changes {
         let status_str = format!("{:<10}", status);
         match color {
-            "green" => println!("  {}  {}", green!("{}", status_str), green!("{}", path)),
+            "green" => println!("    {}  {}", green!("{}", status_str), green!("{}", path)),
             "red" => println!("    {}  {}", red!("{}", status_str), red!("{}", path)),
             _ => println!("    {}  {}", status_str, path),
         }
@@ -220,3 +226,4 @@ fn path_to_string(path: &Path) -> io::Result<String> {
         .map(|s| s.to_string())
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Path contains invalid UTF-8"))
 }
+
